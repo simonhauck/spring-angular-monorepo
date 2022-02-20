@@ -41,7 +41,7 @@ Create your spring project with the spring initializer. I used again IntelliJ fo
 the [Spring Initializer](https://start.spring.io/).
 
 Delete the gradle wrapper, gradlew and gradlew.bat files from the spring project. We only need them in the top level
-project. Finally, open the ``settings.gradle`` of the parent project and include the backend project. It should look in
+project. Finally, open the ``settings.gradle.kts`` of the parent project and include the backend project. It should look in
 the end something like this
 
 ````shell
@@ -55,6 +55,40 @@ Your repository should look something like this at the end.
 Refresh your gradle project. If you use IntelliJ the gradle tab on the right should look something like this. Note: The
 BE is part if the parent project. If the BE is still registered as a module of its own, right click it and unlink the BE
 
+[//]: ( TODO Simon.Hauck 2022-02-20 Add image
+
 ### Create the FE project
 
+Now comes the angular project. Again use your favorite tool to create an angular project. My is named ``fe`` and it must
+be placed in a folder like the backend project. Your project should look something like this now.
 
+[//]: ( TODO Simon.Hauck 2022-02-20 Add image
+
+Create two new files named ``settings.gradle.kts`` and ``build.gradle.kts`` in the fe directory with the following content
+
+````shell
+# build.gradle.kts
+plugins {
+  java
+}
+
+group = "com.github.simonhauck"
+version = "0.0.1-SNAPSHOT"
+java.sourceCompatibility = JavaVersion.VERSION_11
+
+repositories {
+    mavenCentral()
+}
+````
+
+````shell
+# settings.gradle.kts
+rootProject.name = "fe"
+````
+
+Finally, add io the root ``settings.gradle.kts`` the line ``include("fe")``. It should look now like this
+````shell
+rootProject.name = "spring-angular-demo"
+include("be")
+include("fe")
+````
