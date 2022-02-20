@@ -5,6 +5,9 @@ plugins {
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     kotlin("jvm") version "1.6.10"
     kotlin("plugin.spring") version "1.6.10"
+
+    id("org.springdoc.openapi-gradle-plugin") version "1.3.3"
+    id("com.github.johnrengelman.processes") version "0.5.0"
 }
 
 group = "com.github.simonhauck"
@@ -28,6 +31,10 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+
+    // OpenApi / Swagger
+    implementation("org.springdoc:springdoc-openapi-ui:1.6.6")
+    implementation("org.springdoc:springdoc-openapi-kotlin:1.6.5")
 }
 
 tasks.withType<KotlinCompile> {
@@ -39,4 +46,8 @@ tasks.withType<KotlinCompile> {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+openApi {
+    outputDir.set(file("$buildDir/docs"))
 }
