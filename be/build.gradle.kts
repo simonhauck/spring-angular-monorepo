@@ -1,3 +1,4 @@
+import com.google.cloud.tools.jib.gradle.JibTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -8,6 +9,8 @@ plugins {
 
     id("org.springdoc.openapi-gradle-plugin") version "1.3.3"
     id("com.github.johnrengelman.processes") version "0.5.0"
+    id("com.google.cloud.tools.jib") version "3.2.0"
+
 }
 
 group = "com.github.simonhauck"
@@ -24,6 +27,8 @@ repositories {
     mavenCentral()
 }
 
+val feBuildConfiguration: Configuration by configurations.creating {} // <--- Create a new config
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -31,6 +36,8 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+
+    feBuildConfiguration(project(":fe")) // <---- this configuration can define dependencies
 
     // OpenApi / Swagger
     implementation("org.springdoc:springdoc-openapi-ui:1.6.6")
@@ -50,4 +57,31 @@ tasks.withType<Test> {
 
 openApi {
     outputDir.set(file("$buildDir/docs"))
+}
+
+jib {
+    to {
+        val registry = System.getenv("REGISTRY_URL") ?: "local"
+        image = "$registry/company/${project.name}"
+        tags = setOf("${project.version}")
+        auth {
+            username = System.getenv("REGISTRY_USERNAME")
+            password = System.getenv("REGISTRY_PASSWORD")
+        }
+    }
+    container {
+        ports = listOf("8080")
+    }
+}
+
+// Add angular fe to be served from BE
+val copyFeToBuildDirTask = tasks.register<ProcessResources>("copyFeToBuildDir") {
+    dependsOn(feBuildConfiguration)
+    val zipTree = zipTree(feBuildConfiguration.singleFile)
+    from(zipTree)
+    into("$buildDir/resources/main")
+}
+
+tasks.withType<JibTask> {
+    dependsOn(copyFeToBuildDirTask)
 }

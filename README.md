@@ -182,7 +182,7 @@ the frontend. Of course change this stuff to match your personal needs ;)
 // fe build.gradle.kts
 plugins {
     // Other plugins
-    id("org.openapi.generator") version ("5.4.0")
+    id("org.openapi.generator") version "5.4.0"
 }
 
 val angularBindingPath = "$buildDir/angular-binding/generated"
@@ -244,7 +244,7 @@ folder of the module. This node will be used for all our other tasks.
 // fe build.gradle.kts
 plugins {
     // --- Other plugins 
-    id("com.github.node-gradle.node") version ("3.2.0")
+    id("com.github.node-gradle.node") version "3.2.0"
 }
 
 node {
@@ -398,9 +398,81 @@ springdoc:
 With all those obstacles tackled, i and hopefully you too, have a proper api response...hurrayyy :D
 
 Note: For better code completion sense you can (at least in IntelliJ) mark the ``angular-binding`` folder as
-generatedSources by right click > mark directory as > generated sources. 
+generatedSources by right click > mark directory as > generated sources.
 
+### Include frontend in docker
 
+Now to the grand finale. Lets bundle it all together and deploy it as docker container. I will
+use [Jib](https://cloud.google.com/blog/products/application-development/introducing-jib-build-java-docker-images-better)
+for that. Add the gradle plugin and configure your container. The registry credentials are of course optional and can be
+used with a CI for example.
 
+````kotlin
+// In be build.gradle.kts
 
+plugins {
+    // Other plugins ...
+    id("com.google.cloud.tools.jib") version "3.2.0"
+}
 
+jib {
+    to {
+        val registry = System.getenv("REGISTRY_URL") ?: "local"
+        image = "$registry/company/${project.name}"
+        tags = setOf("${project.version}")
+        auth {
+            username = System.getenv("REGISTRY_USERNAME")
+            password = System.getenv("REGISTRY_PASSWORD")
+        }
+    }
+    container {
+        ports = listOf("8080")
+    }
+}
+````
+
+Last, we have to add the FE project as dependency and make jib depend on it. As stated at the beginning, we can't just
+include the frontend as a normal implementation dependency because we would have gradle build cycles. So the fe will not
+be available with the normal bootJar task! (Atle ast for this does not matter. For development i can start the FE
+manually and for production, in jib, its packed correctly.)
+
+Open your build.gradle.kts in the backend porject and create a new configuration like the following snippet below.
+
+````kotlin
+val feBuildConfiguration: Configuration by configurations.creating {} // <--- Create a new config
+
+dependencies {
+    // ... Other dependencies
+
+    // Web frontend will be wired after compilation
+    feBuildConfiguration(project(":fe")) // <---- this configuration can define dependencies
+}
+````
+
+Now we can define a new task, that depends on the ``feBuildConfiguration`` and copies the static files in our build
+directory. Additionally, we configure our jib task to depend on the ``copyFeToBuildDirTask`` task.
+
+````kotlin
+// be build.gradle.kts
+import com.google.cloud.tools.jib.gradle.JibTask
+
+// Add angular fe to be served from BE
+val copyFeToBuildDirTask = tasks.register<ProcessResources>("copyFeToBuildDir") {
+    dependsOn(feBuildConfiguration)
+    val zipTree = zipTree(feBuildConfiguration.singleFile)
+    from(zipTree)
+    into("$buildDir/resources/main")
+}
+
+tasks.withType<JibTask> {
+    dependsOn(copyFeToBuildDirTask)
+}
+````
+
+Build the container with ``gradlew be:jibDockerBuild``. Afterwards you should be able to start it
+with ``docker run -p 8080:8080 local/company/be:0.0.1-SNAPSHOT``
+
+If you have come so far, you should see we are nearly done. The frontend is served via the backend. THe api generation
+works (nearly perfect). For other host you should overwrite the api base-path.
+
+// TODO Overwrite api basepath
