@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
 import com.google.cloud.tools.jib.gradle.JibTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -11,6 +13,8 @@ plugins {
     id("com.github.johnrengelman.processes") version "0.5.0"
     id("com.google.cloud.tools.jib") version "3.2.0"
 
+    id("com.github.johnrengelman.shadow") version "7.1.2"
+    application // <- optional. Offers the runShadow gradle task and can create bash/batch scripts to start the jar
 }
 
 group = "com.github.simonhauck"
@@ -84,4 +88,24 @@ val copyFeToBuildDirTask = tasks.register<ProcessResources>("copyFeToBuildDir") 
 
 tasks.withType<JibTask> {
     dependsOn(copyFeToBuildDirTask)
+}
+
+tasks.withType<ShadowJar> {
+    // Include spring stuff to get a fat jar
+    mergeServiceFiles()
+    append("META-INF/spring.handlers")
+    append("META-INF/spring.schemas")
+    append("META-INF/spring.tooling")
+    transform(PropertiesFileTransformer::class.java) {
+        paths = listOf("META-INF/spring.factories")
+        mergeStrategy = "append"
+    }
+}
+
+tasks.withType<ShadowJar> {
+    dependsOn(copyFeToBuildDirTask)
+}
+
+application {
+    mainClass.set("com.github.simonhauck.be.BeApplicationKt")
 }

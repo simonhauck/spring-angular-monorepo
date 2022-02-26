@@ -515,5 +515,78 @@ export class AppModule {
 }
 ````
 
+### Deploy project as jar and not in docker
 
+For some projects it might be required to provide a .jar. As you may have noticed, the spring bootJar does not contain
+the fe because of the build cycle. There are different ways how this issue can be solved. One solution I want to
+showcase here uses the gradle plugin [shadow plugin](https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow).
+With this plugin we can easily create another jar, that contains the backend and frontend code and works more a less the
+same as the docker container.
 
+Start by adding the shadow gradle plugin to the backend ``build.gradle.kts``.
+
+````kotlin
+// be build.gradle.kts
+plugins {
+    // ... Other plugins
+    id("com.github.johnrengelman.shadow") version "7.1.2"
+    application // <- optional. Offers the runShadow gradle task and can create bash/batch scripts to start the jar 
+}
+````
+
+To get a working jar with all the spring dependencies, we have to add the following configuration in our
+backend ``build.gradle.kts``
+
+````kotlin
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
+
+tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
+    // Include spring stuff to get a fat jar
+    mergeServiceFiles()
+    append("META-INF/spring.handlers")
+    append("META-INF/spring.schemas")
+    append("META-INF/spring.tooling")
+    transform(com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer::class.java) {
+        paths = listOf("META-INF/spring.factories")
+        mergeStrategy = "append"
+    }
+}
+````
+
+Last but not least, the shadowJar task must depend on the copyFeToBuildDirTask, which we have already created for the
+docker build and we have to specify the mainClass
+
+````kotlin
+// be build.gradle.kts
+tasks.withType<ShadowJar> {
+    dependsOn(copyFeToBuildDirTask)
+}
+
+// This is only required when the application plugin is imported
+application {
+    mainClass.set("com.github.simonhauck.be.BeApplicationKt")
+}
+````
+
+If you have only the shadowJar plugin, you can generate the jar with ``gradlew shadowJar``. The generated jar will be in
+the build folder (it should be the one with the suffix "all" in /build/libs). You should be able to run it like every
+other jar with ``java -jar be-0.0.1-SNAPSHOT-all.jar``
+
+If you have the application plugin installed, you can also use the ``gradlew runShadow`` task to build and run the jar.
+
+## Summary
+
+I hope the instructions are detailed enough, so that every person that makes it this far has a project with frontend and
+backend running together without any issues.
+
+My recommended development flow is:
+For local development start the backend and frontend separately and let the ci build the final project. If you ever need
+to test/debug something locally with the fill stack, use the runShadow task. At least from IntelliJ you can debug the
+jar.
+
+For an even better development experience, you may have to teak the gradle input/outputs for the individual tasks, so
+that the gradle caching works its magic. If this is correctly configured, you can also use the parallel
+flag ``gradlew someTask --parallel`` to execute tasks even faster.
+
+If you have any feedback or suggestions, please let me know.
