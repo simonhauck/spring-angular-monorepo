@@ -475,4 +475,45 @@ with ``docker run -p 8080:8080 local/company/be:0.0.1-SNAPSHOT``
 If you have come so far, you should see we are nearly done. The frontend is served via the backend. THe api generation
 works (nearly perfect). For other host you should overwrite the api base-path.
 
-// TODO Overwrite api basepath
+### Override base api path
+
+Now let's override the base api path in production, so that the projects works regardless of the host and port. In the
+angular ``environmen.ts`` introduce a new ``serverBase`` value and fill it with the server url. This will probably
+be ``http://localhost:8080``.
+
+````typescript
+export const environment = {
+    production: false,
+    serverBase: 'http://localhost:8080',
+};
+````
+
+In the production config, we can override this value to use the host url, like shown in the following snippet.
+
+````typescript
+// environment.prod.ts
+export const environment = {
+    production: true,
+    serverBase: window.location.origin,
+};
+````
+
+In your ``app.module.ts`` add a new ``BASE_PATH`` provider like in the following example
+
+````typescript
+import { BASE_PATH }   from "@mycompany/myproject-api";
+import { environment } from "../environments/environment";
+
+@NgModule({
+    declarations: [
+        AppComponent,
+    ],
+    // ... other imports ...
+    providers: [{provide: BASE_PATH, useValue: environment.serverBase}],
+})
+export class AppModule {
+}
+````
+
+
+
