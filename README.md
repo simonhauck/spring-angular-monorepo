@@ -214,7 +214,7 @@ this, add the following configuration.
 // fe build.gradle.kts
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
-val generateGoScan4EsrApi = tasks.withType<GenerateTask>() {
+val generateApi = tasks.withType<GenerateTask>() {
     dependsOn(":be:generateOpenApiDocs")
     doFirst {
         delete(angularBindingPath)
