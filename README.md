@@ -50,19 +50,20 @@ include("be")
 ````
 
 Your repository should look something like this at the end.
-[//] TODO Simon.Hauck 2022-02-20 insert image
+
+![alt text](https://github.com/simonhauck/spring-angular-monorepo/blob/master/documentation/folder_structure_after_be_added.PNG?raw=true)
 
 Refresh your gradle project. If you use IntelliJ the gradle tab on the right should look something like this. Note: The
 BE is part if the parent project. If the BE is still registered as a module of its own, right click it and unlink the BE
 
-[//]: ( TODO Simon.Hauck 2022-02-20 Add image
+![alt text](https://github.com/simonhauck/spring-angular-monorepo/blob/master/documentation/gradle_tab_after_be_added.PNG?raw=true)
 
 ### Create the FE project
 
 Now comes the angular project. Again use your favorite tool to create an angular project. My is named ``fe`` and it must
 be placed in a folder like the backend project. Your project should look something like this now.
 
-[//]: ( TODO Simon.Hauck 2022-02-20 Add image
+![alt text](https://github.com/simonhauck/spring-angular-monorepo/blob/master/documentation/folder_structure_after_fe_added.PNG?raw=true)
 
 Create two new files named ``settings.gradle.kts`` and ``build.gradle.kts`` in the fe directory with the following
 content
